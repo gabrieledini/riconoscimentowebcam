@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Riconoscimento con la webcam</title>
+<meta name="description" content="App per la scuola che riconoscono oggetti e volti con la fotocamera.">
+<meta name="theme-color" content="#1B2A4A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Webcam AI">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Lexend:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF6F3; --surface:#FFFFFF; --ink:#1B2A4A; --muted:#4D5E7A;
+  --yellow:#FFC93C; --teal:#1FA39A; --coral:#F2665E; --line:#D3E4DE;
+  --display:"Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Lexend", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121C30; --surface:#1B2A4A; --ink:#EAF2F8; --muted:#A9B8CF;
+    --line:#2C3E62; color-scheme:dark;
+  }
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.55 var(--body);-webkit-font-smoothing:antialiased}
+main{max-width:44rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+
+/* Hero: il mirino */
+.hero{display:grid;grid-template-columns:auto 1fr;gap:1.25rem;align-items:center;padding:1rem 0 2rem}
+.hero svg{width:6.5rem;height:6.5rem;flex:none}
+.hero h1{font:800 clamp(2rem,7vw,2.9rem)/1.02 var(--display);letter-spacing:-.02em;margin:0 0 .5rem}
+.hero p{margin:0;color:var(--muted);max-width:30rem}
+.scan{transform-origin:center;animation:scan 2.6s ease-in-out 1 both}
+@keyframes scan{0%{transform:translateY(-38px);opacity:0}15%{opacity:1}85%{opacity:1}100%{transform:translateY(38px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.scan{animation:none;opacity:0}}
+
+/* Elenco app: ogni voce è un "riquadro di rilevamento" */
+.apps{list-style:none;margin:0;padding:0;display:grid;gap:1.5rem}
+.app a{position:relative;display:grid;grid-template-columns:3.5rem 1fr;gap:1rem;align-items:start;
+  padding:1.5rem 1.25rem 1.25rem;background:var(--surface);color:inherit;text-decoration:none;
+  border:2px solid var(--line);border-radius:14px;transition:border-color .15s}
+.app a:hover{border-color:var(--c)}
+.app a:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+.tag{position:absolute;top:-.8rem;left:1rem;background:var(--c);color:#fff;font:500 .8rem/1 var(--body);
+  padding:.35rem .6rem;border-radius:6px}
+.glyph{width:3.5rem;height:3.5rem;border-radius:12px;background:color-mix(in srgb,var(--c) 15%,transparent);
+  display:grid;place-items:center;font-size:1.8rem}
+.app h2{font:600 1.35rem/1.2 var(--display);margin:.1rem 0 .3rem}
+.app p{margin:0 0 .75rem;color:var(--muted);font-size:.97rem}
+.open{display:inline-block;font-weight:500;color:var(--ink);border-bottom:3px solid var(--c);padding-bottom:1px}
+
+/* Nota fotocamera */
+.note{margin-top:2.25rem;padding:1rem 1.25rem;border-left:5px solid var(--yellow);background:var(--surface);border-radius:0 12px 12px 0}
+.note h3{font:600 1.05rem/1.3 var(--display);margin:0 0 .3rem}
+.note p{margin:0;color:var(--muted);font-size:.95rem}
+footer{margin-top:2rem;color:var(--muted);font-size:.85rem;text-align:center}
+</style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <g fill="none" stroke="#FFC93C" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 38V20a6 6 0 0 1 6-6h18"/><path d="M82 14h18a6 6 0 0 1 6 6v18"/>
+        <path d="M106 82v18a6 6 0 0 1-6 6H82"/><path d="M38 106H20a6 6 0 0 1-6-6V82"/>
+      </g>
+      <circle cx="60" cy="60" r="24" fill="#1FA39A"/>
+      <circle cx="60" cy="60" r="13" fill="#1B2A4A"/>
+      <circle cx="65" cy="55" r="4" fill="#EAF6F3"/>
+      <rect class="scan" x="20" y="58" width="80" height="4" rx="2" fill="#F2665E"/>
+    </svg>
+    <div>
+      <h1>Riconoscimento con la webcam</h1>
+      <p>Punta la fotocamera e guarda come il computer impara a riconoscere oggetti e volti.</p>
+    </div>
+  </header>
+
+  <ul class="apps" id="apps"></ul>
+
+  <aside class="note">
+    <h3>Prima di iniziare</h3>
+    <p>Quando il browser lo chiede, consenti l’uso della fotocamera. Le immagini vengono elaborate sul dispositivo e non vengono inviate a nessun server.</p>
+  </aside>
+
+  <footer>Aggiungi questa pagina alla schermata Home per aprirla come un’app.</footer>
+</main>
+
+<script>
+// Per aggiungere un’app basta una nuova voce in questo elenco.
+const APPS = [
+  {
+    titolo: "Riconosci gli oggetti",
+    tag: "80 tipi di oggetti",
+    descrizione: "Inquadra quello che hai intorno: persone, animali, frutta, oggetti di scuola. Ogni cosa trovata viene circondata da un riquadro con il suo nome.",
+    url: "https://cute-cannoli-2c80ca.netlify.app/",
+    icona: "🔍",
+    colore: "#1FA39A"
+  },
+  {
+    titolo: "Riconosci i volti",
+    tag: "volti ed espressioni",
+    descrizione: "Trova i volti davanti alla fotocamera, mostra i punti del viso e prova a indovinare l’espressione: felice, sorpreso, arrabbiato…",
+    url: "https://gorgeous-torte-e44eeb.netlify.app/",
+    icona: "🙂",
+    colore: "#F2665E"
+  }
+];
+
+const ul = document.getElementById("apps");
+for (const a of APPS) {
+  const li = document.createElement("li");
+  li.className = "app";
+  li.innerHTML = `
+    <a href="${a.url}" style="--c:${a.colore}">
+      <span class="tag">${a.tag}</span>
+      <span class="glyph" aria-hidden="true">${a.icona}</span>
+      <span>
+        <h2>${a.titolo}</h2>
+        <p>${a.descrizione}</p>
+        <span class="open">Apri l’app</span>
+      </span>
+    </a>`;
+  ul.appendChild(li);
+}
+</script>
+</body>
+</html>
